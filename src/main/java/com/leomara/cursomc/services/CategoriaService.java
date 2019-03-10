@@ -1,6 +1,7 @@
 package com.leomara.cursomc.services;
 
 import com.leomara.cursomc.domain.Categoria;
+import com.leomara.cursomc.dto.CategoriaDTO;
 import com.leomara.cursomc.repositories.CategoriaRepository;
 import com.leomara.cursomc.services.exceptions.DataIntegrityException;
 import com.leomara.cursomc.services.exceptions.ObjectNotFoundException;
@@ -51,5 +52,9 @@ public class CategoriaService {
     public Page<Categoria> findPage(Integer page, Integer linesPerPage, String orderBy, String direction) {
         PageRequest pageRequest = PageRequest.of(page, linesPerPage, Sort.Direction.valueOf(direction), orderBy);
         return repo.findAll(pageRequest);
+    }
+
+    public Categoria fromDTO(CategoriaDTO objDto) {
+        return new Categoria(objDto.getId(), objDto.getNome());
     }
 }
