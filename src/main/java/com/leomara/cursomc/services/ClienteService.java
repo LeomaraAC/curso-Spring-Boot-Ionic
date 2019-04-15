@@ -1,8 +1,13 @@
 package com.leomara.cursomc.services;
 
+import com.leomara.cursomc.domain.Cidade;
 import com.leomara.cursomc.domain.Cliente;
+import com.leomara.cursomc.domain.Endereco;
+import com.leomara.cursomc.domain.enums.TipoCliente;
 import com.leomara.cursomc.dto.ClienteDTO;
+import com.leomara.cursomc.dto.ClienteNewDTO;
 import com.leomara.cursomc.repositories.ClienteRepository;
+import com.leomara.cursomc.repositories.EnderecoRepository;
 import com.leomara.cursomc.services.exceptions.DataIntegrityException;
 import com.leomara.cursomc.services.exceptions.ObjectNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +25,9 @@ import java.util.Optional;
 public class ClienteService {
     @Autowired
     private ClienteRepository repo;
+
+    @Autowired
+    private EnderecoRepository enderecoRepository;
 
     public Cliente find(Integer id) {
         Optional<Cliente> obj = repo.findById(id);
@@ -50,6 +59,21 @@ public class ClienteService {
         return new Cliente(objDto.getId(), objDto.getNome(), objDto.getEmail(),null, null);
     }
 
+    public Cliente fromDTO(ClienteNewDTO objDto) {
+        Cliente cli = new Cliente(null, objDto.getNome(), objDto.getEmail(), objDto.getCpfOuCnpj(),
+                TipoCliente.toEnum(objDto.getTipo()));
+        Cidade cid = new Cidade(objDto.getCidadeId(),null,null);
+        Endereco end =  new Endereco(null, objDto.getLogradouro(), objDto.getNumero(), objDto.getComplemento(),
+                objDto.getBairro(), objDto.getCep(), cli, cid);
+        cli.getEnderecos().add(end);
+        cli.getTelefones().add(objDto.getTelefone1());
+        if (objDto.getTelefone2() != null)
+            cli.getTelefones().add(objDto.getTelefone2());
+        if (objDto.getTelefone3() != null)
+            cli.getTelefones().add(objDto.getTelefone3());
+        return cli;
+    }
+
     private void updateData(Cliente newObj, Cliente obj) {
         newObj.setNome(obj.getNome());
         newObj.setEmail(obj.getEmail());
@@ -58,5 +82,13 @@ public class ClienteService {
     public Page<Cliente> findPage(Integer page, Integer linesPerPage, String orderBy, String direction) {
         PageRequest pageRequest = PageRequest.of(page, linesPerPage, Sort.Direction.valueOf(direction), orderBy);
         return repo.findAll(pageRequest);
+    }
+
+    @Transactional
+    public Cliente insert(Cliente obj) {
+        obj.setId(null);
+        obj = repo.save(obj);
+        enderecoRepository.saveAll(obj.getEnderecos());
+        return obj;
     }
 }
